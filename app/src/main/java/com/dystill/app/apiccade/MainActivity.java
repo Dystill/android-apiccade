@@ -9,6 +9,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.ParcelFileDescriptor;
+import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.provider.DocumentFile;
@@ -22,10 +24,17 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Random;
+
+import static android.provider.DocumentsContract.buildChildDocumentsUriUsingTree;
+import static android.provider.DocumentsContract.buildDocumentUriUsingTree;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -110,24 +119,46 @@ public class MainActivity extends AppCompatActivity {
             if (resultCode == RESULT_OK) {
                 ImageView image = (ImageView) findViewById(R.id.main_image);
 
+                // get the directory uri from the intent
                 Uri treeUri = data.getData();
-                DocumentFile directory_path = DocumentFile.fromTreeUri(this, treeUri);
-                DocumentFile file_names[] = directory_path.listFiles();
+                getContentResolver().takePersistableUriPermission(treeUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-                // List all existing files inside picked directory
+                // initialize a DocumentFile object to the Uri
+                DocumentFile directory_path = DocumentFile.fromTreeUri(this, treeUri);
+                final DocumentFile file_names[] = directory_path.listFiles();
+
+                // Log all existing files inside picked directory
                 for (DocumentFile file : file_names) {
                     Log.d("Listed Files", "Found file " + file.getName() + " with size " + file.length());
                 }
 
+                // randomly choose an image from the folder
                 Random rand = new Random();
                 image_index = rand.nextInt(file_names.length);
+                Log.v("Random", "done");
 
-                Bitmap bitmap = BitmapFactory.decodeFile(file_names[image_index].toString());
-                image.setImageBitmap(bitmap);
+                // take the random image uri to convert it to a bitmap image
+                Bitmap bitmap = null;
+                try {
+                    bitmap = getBitmapFromUri(file_names[image_index].getUri());
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
 
+                // if an image was found, set the main ImageView to that image
+                // else show a snackbar message
+                if(bitmap != null)
+                    image.setImageBitmap(bitmap);
+                else {
+                    View view = findViewById(R.id.linear_view);
+                    Snackbar.make(view, "Sorry, no image was found.", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
             }
             else {
-                // show a snackbar saying tha no folder was selected
+                // show a snackbar saying that no folder was selected
                 View view = findViewById(R.id.linear_view);
                 Snackbar.make(view, "No folder selected.", Snackbar.LENGTH_LONG)
                         .setAction("Try Again", new View.OnClickListener() {
@@ -151,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(intent, SELECT_WATCH_FOLDER);
         }
 
-        /* experimental: for kitkat (probably doesn't work)
+        /* experimental: for kitkat (probably won't work)
         else {
             Uri selectedUri = Uri.parse(Environment.getExternalStorageDirectory() + "/myFolder/");
             intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -167,10 +198,15 @@ public class MainActivity extends AppCompatActivity {
         /**/
     }
 
-    /* Checks if external storage is available to at least read */
-    public boolean isExternalStorageReadable() {
-        String state = Environment.getExternalStorageState();
-        return Environment.MEDIA_MOUNTED.equals(state) ||
-                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
+    // Simple Magic.
+    // Taken from https://developer.android.com/guide/topics/providers/document-provider.html
+    // Thank you Google.
+    private Bitmap getBitmapFromUri(Uri uri) throws IOException {
+        ParcelFileDescriptor parcelFileDescriptor =
+                getContentResolver().openFileDescriptor(uri, "r");
+        FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+        Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+        parcelFileDescriptor.close();
+        return image;
     }
 }
