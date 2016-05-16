@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
             treeUri = Uri.parse(treeUriString);
             directory_path = DocumentFile.fromTreeUri(this, treeUri);
             // load images while displaying a loading circle
-            new AsyncImageLoad().execute();
+            new AsyncRandomImageLoad().execute();
         }
     }
 
@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.action_redo:
                 // load another image
+                new AsyncRandomImageLoad().execute();
                 return true;
             default:
                 // the user's action was not recognized.
@@ -126,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
                 directory_path = DocumentFile.fromTreeUri(this, treeUri);
 
                 // load images while displaying a loading circle
-                new AsyncImageLoad().execute();
+                new AsyncRandomImageLoad().execute();
             }
             else {
                 // show a snackbar saying that no folder was selected
@@ -180,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
         return image;
     }
 
-    private class AsyncImageLoad extends AsyncTask<Void, Void, Void> {
+    private class AsyncRandomImageLoad extends AsyncTask<Void, Void, Void> {
 
         Bitmap bitmap = null;
 
@@ -188,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
 
+            image.setImageAlpha(0);
             // show loading circle
             findViewById(R.id.loading_panel).setVisibility(View.VISIBLE);
         }
@@ -198,13 +200,13 @@ public class MainActivity extends AppCompatActivity {
             // initialize a DocumentFile object to the Uri
             final DocumentFile file_names[] = directory_path.listFiles();
 
-            /* log all existing files inside picked directory
-               takes up a lot of time.
+            // log all existing files inside picked directory.
+            // takes up a lot of time.
+            /*
             for (DocumentFile file : file_names) {
                 Log.d("Listed Files", "Found file " + file.getName()
                         + " with size " + file.length());
-            }
-            */
+            } /**/
 
             // randomly choose an image from the folder
             Random rand = new Random();
@@ -234,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
 
+            image.setImageAlpha(255);
             // hide loading circle
             findViewById(R.id.loading_panel).setVisibility(View.GONE);
         }
