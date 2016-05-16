@@ -26,9 +26,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     private static final int SELECT_WATCH_FOLDER = 1;
-    private static int image_index;
     private ImageView image;
-    private Uri treeUri;
     private static DocumentFile directory_path = null;
 
     @Override
@@ -87,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
                 image = (ImageView) findViewById(R.id.main_image);
 
                 // get the directory uri from the intent
-                treeUri = data.getData();
+                Uri treeUri = data.getData();
                 getContentResolver().takePersistableUriPermission(treeUri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
@@ -173,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
 
             // randomly choose an image from the folder
             Random rand = new Random();
-            image_index = rand.nextInt(file_names.length);
+            int image_index = rand.nextInt(file_names.length);
 
             // take the random image uri to convert it to a bitmap image
             try {
