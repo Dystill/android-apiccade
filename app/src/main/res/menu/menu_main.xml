@@ -6,7 +6,7 @@
     <item
         android:id="@+id/action_folder"
         android:orderInCategory="100"
-        android:icon="@drawable/ic_folder_white_48px"
+        android:icon="@drawable/ic_folder_white_24px"
         android:title="@string/action_folder"
         app:showAsAction="ifRoom" />
     <item
