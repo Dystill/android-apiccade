@@ -4,14 +4,20 @@
     tools:context="com.dystill.app.apiccade.MainActivity">
 
     <item
-        android:id="@+id/action_folder"
+        android:id="@+id/action_redo"
         android:orderInCategory="100"
+        android:icon="@drawable/ic_replay_white_24px"
+        android:title="@string/action_redo"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_folder"
+        android:orderInCategory="200"
         android:icon="@drawable/ic_folder_white_24px"
         android:title="@string/action_folder"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_settings"
-        android:orderInCategory="200"
+        android:orderInCategory="300"
         android:title="@string/action_settings"
         app:showAsAction="never" />
 </menu>

@@ -1,6 +1,7 @@
 package com.dystill.app.apiccade;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -27,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int SELECT_WATCH_FOLDER = 1;
     private ImageView image;
+    private Uri treeUri;
     private static DocumentFile directory_path = null;
 
     @Override
@@ -39,8 +41,7 @@ public class MainActivity extends AppCompatActivity {
 
         image = (ImageView) findViewById(R.id.main_image);
 
-        if (directory_path == null)
-            if (image != null) image.setImageResource(R.drawable.start);
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         assert fab != null;
@@ -51,6 +52,21 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
+        // Restore preferences
+        SharedPreferences settings = getSharedPreferences("imagedata", 0);
+        String treeUriString = settings.getString("imageuri", "");
+
+        if(treeUriString.isEmpty()) {
+            if (directory_path == null)
+                if (image != null) image.setImageResource(R.drawable.start);
+        }
+        else {
+            treeUri = Uri.parse(treeUriString);
+            directory_path = DocumentFile.fromTreeUri(this, treeUri);
+            // load images while displaying a loading circle
+            new AsyncImageLoad().execute();
+        }
     }
 
     @Override
@@ -67,14 +83,31 @@ public class MainActivity extends AppCompatActivity {
                 // go to settings
                 return true;
             case R.id.action_folder:
-                // if choosing a watch folder
+                // choose a folder
                 sendFolderIntent();
+                return true;
+            case R.id.action_redo:
+                // load another image
                 return true;
             default:
                 // the user's action was not recognized.
                 return super.onOptionsItemSelected(item);
 
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // We need an Editor object to make preference changes.
+        // All objects are from android.context.Context
+        SharedPreferences settings = getSharedPreferences("imagedata", 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.clear();
+        editor.putString("imageuri", treeUri.toString());
+
+        // Commit the edits!
+        editor.commit();
     }
 
     @Override
@@ -85,12 +118,14 @@ public class MainActivity extends AppCompatActivity {
                 image = (ImageView) findViewById(R.id.main_image);
 
                 // get the directory uri from the intent
-                Uri treeUri = data.getData();
+                treeUri = data.getData();
                 getContentResolver().takePersistableUriPermission(treeUri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
+                // create DocumentFile from the intent uri
                 directory_path = DocumentFile.fromTreeUri(this, treeUri);
 
+                // load images while displaying a loading circle
                 new AsyncImageLoad().execute();
             }
             else {
@@ -152,17 +187,19 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
             // show loading circle
             findViewById(R.id.loading_panel).setVisibility(View.VISIBLE);
         }
 
         @Override
         protected Void doInBackground(Void... params) {
+
             // initialize a DocumentFile object to the Uri
             final DocumentFile file_names[] = directory_path.listFiles();
 
-            // Log all existing files inside picked directory
-            /*
+            /* log all existing files inside picked directory
+               takes up a lot of time.
             for (DocumentFile file : file_names) {
                 Log.d("Listed Files", "Found file " + file.getName()
                         + " with size " + file.length());
@@ -186,6 +223,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Void params) {
+
             // if an image was found, set the main ImageView to that image
             // else show a snackbar message
             if(bitmap != null)
@@ -195,6 +233,7 @@ public class MainActivity extends AppCompatActivity {
                 Snackbar.make(view, R.string.snackbar_no_images, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
+
             // hide loading circle
             findViewById(R.id.loading_panel).setVisibility(View.GONE);
         }
