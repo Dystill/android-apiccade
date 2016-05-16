@@ -46,9 +46,9 @@
                         android:id="@+id/main_image"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:scaleType="centerInside"
+                        android:scaleType="fitCenter"
                         android:contentDescription="@string/image_description"
-                        android:adjustViewBounds="true" />
+                        android:adjustViewBounds="true"/>
 
                     <RelativeLayout
                         android:id="@+id/loading_panel"
@@ -71,8 +71,9 @@
                 android:id="@+id/linear_view_metadata"
                 android:orientation="vertical"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@android:color/background_light">
+                android:layout_height="240dp"
+                android:background="@android:color/background_light"
+                android:elevation="2dp">
             </LinearLayout>
 
         </LinearLayout>

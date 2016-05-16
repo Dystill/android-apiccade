@@ -3,15 +3,11 @@ package com.dystill.app.apiccade;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
-import android.media.Image;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.ParcelFileDescriptor;
-import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.provider.DocumentFile;
@@ -22,20 +18,10 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
-import android.widget.Toast;
 
-import java.io.File;
 import java.io.FileDescriptor;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Random;
-
-import static android.provider.DocumentsContract.buildChildDocumentsUriUsingTree;
-import static android.provider.DocumentsContract.buildDocumentUriUsingTree;
 
 public class MainActivity extends AppCompatActivity {
 
