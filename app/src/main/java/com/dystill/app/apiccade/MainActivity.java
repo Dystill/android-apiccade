@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.media.Image;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -39,24 +40,10 @@ import static android.provider.DocumentsContract.buildDocumentUriUsingTree;
 public class MainActivity extends AppCompatActivity {
 
     private static final int SELECT_WATCH_FOLDER = 1;
-    private static DocumentFile directory_path = null;
     private static int image_index;
-    // array of supported file extensions
-    protected static final String[] EXTENSIONS = new String[]{
-            "gif", "png", "bmp"
-    };
-    // filter to identify images based on their extensions
-    protected static final FilenameFilter IMAGE_FILTER = new FilenameFilter() {
-        @Override
-        public boolean accept(final File dir, final String name) {
-            for (final String ext : EXTENSIONS) {
-                if (name.endsWith("." + ext)) {
-                    return (true);
-                }
-            }
-            return (false);
-        }
-    };
+    private ImageView image;
+    private Uri treeUri;
+    private static DocumentFile directory_path = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,23 +53,17 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        ImageView image = (ImageView) findViewById(R.id.main_image);
-        if (directory_path == null) {
-            if (image != null) {
-                image.setImageResource(R.drawable.start);
-            }
-        }
-        else {
-            Bitmap bitmap = BitmapFactory.decodeFile(directory_path.listFiles()[image_index].toString());
-            image.setImageBitmap(bitmap);
-        }
+        image = (ImageView) findViewById(R.id.main_image);
+
+        if (directory_path == null)
+            if (image != null) image.setImageResource(R.drawable.start);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         assert fab != null;
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, R.string.snackbar_fab, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });
@@ -117,58 +98,28 @@ public class MainActivity extends AppCompatActivity {
         if(requestCode == SELECT_WATCH_FOLDER) {
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
-                ImageView image = (ImageView) findViewById(R.id.main_image);
+                image = (ImageView) findViewById(R.id.main_image);
 
                 // get the directory uri from the intent
-                Uri treeUri = data.getData();
+                treeUri = data.getData();
                 getContentResolver().takePersistableUriPermission(treeUri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-                // initialize a DocumentFile object to the Uri
-                DocumentFile directory_path = DocumentFile.fromTreeUri(this, treeUri);
-                final DocumentFile file_names[] = directory_path.listFiles();
+                directory_path = DocumentFile.fromTreeUri(this, treeUri);
 
-                // Log all existing files inside picked directory
-                for (DocumentFile file : file_names) {
-                    Log.d("Listed Files", "Found file " + file.getName() + " with size " + file.length());
-                }
-
-                // randomly choose an image from the folder
-                Random rand = new Random();
-                image_index = rand.nextInt(file_names.length);
-                Log.v("Random", "done");
-
-                // take the random image uri to convert it to a bitmap image
-                Bitmap bitmap = null;
-                try {
-                    bitmap = getBitmapFromUri(file_names[image_index].getUri());
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                // if an image was found, set the main ImageView to that image
-                // else show a snackbar message
-                if(bitmap != null)
-                    image.setImageBitmap(bitmap);
-                else {
-                    View view = findViewById(R.id.linear_view);
-                    Snackbar.make(view, "Sorry, no image was found.", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
+                new AsyncImageLoad().execute();
             }
             else {
                 // show a snackbar saying that no folder was selected
                 View view = findViewById(R.id.linear_view);
-                Snackbar.make(view, "No folder selected.", Snackbar.LENGTH_LONG)
-                        .setAction("Try Again", new View.OnClickListener() {
+                Snackbar.make(view, R.string.snackbar_no_folder, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.snackbar_no_folder_action, new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
                                 sendFolderIntent();
                             }
                         }).show();
             }
-
         }
     }
 
@@ -209,4 +160,60 @@ public class MainActivity extends AppCompatActivity {
         parcelFileDescriptor.close();
         return image;
     }
+
+    private class AsyncImageLoad extends AsyncTask<Void, Void, Void> {
+
+        Bitmap bitmap = null;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // show loading circle
+            findViewById(R.id.loading_panel).setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            // initialize a DocumentFile object to the Uri
+            final DocumentFile file_names[] = directory_path.listFiles();
+
+            // Log all existing files inside picked directory
+            /*
+            for (DocumentFile file : file_names) {
+                Log.d("Listed Files", "Found file " + file.getName()
+                        + " with size " + file.length());
+            }
+            */
+
+            // randomly choose an image from the folder
+            Random rand = new Random();
+            image_index = rand.nextInt(file_names.length);
+
+            // take the random image uri to convert it to a bitmap image
+            try {
+                bitmap = getBitmapFromUri(file_names[image_index].getUri());
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void params) {
+            // if an image was found, set the main ImageView to that image
+            // else show a snackbar message
+            if(bitmap != null)
+                image.setImageBitmap(bitmap);
+            else {
+                View view = findViewById(R.id.linear_view);
+                Snackbar.make(view, R.string.snackbar_no_images, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+            // hide loading circle
+            findViewById(R.id.loading_panel).setVisibility(View.GONE);
+        }
+    }
+
 }
