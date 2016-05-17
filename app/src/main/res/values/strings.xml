@@ -7,5 +7,6 @@
     <string name="snackbar_fab">Replace with your own action</string>
     <string name="snackbar_no_images">Sorry, no images were found there.</string>
     <string name="snackbar_no_folder">No folder selected.</string>
-    <string name="snackbar_no_folder_action">Retry</string>
+    <string name="snackbar_folder_exists">That folder is already being used.</string>
+    <string name="snackbar_retry">Retry</string>
 </resources>
