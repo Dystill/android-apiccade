@@ -86,7 +86,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    protected void onDestroy() {                                                                    ////// onDestroy() //////
+        super.onDestroy();
+        Log.v("onDestroy", "Started");
+        SharedPreferences settings = getSharedPreferences("imagedata", 0);                          // load the pref file "imagedata"
+        SharedPreferences.Editor editor = settings.edit();                                          // create an editor to add data
+        editor.clear();                                                                             // clear previous data
+
+        Log.v("onDestroy", "Write folder #");
+        editor.putString("amount_of_folders", Integer.toString(image_uri_lists.size()));            // add entry for the amount of folders
+
+        Log.v("onDestroy", "Start image uri writing");
+        ArrayList<Uri> temp_uri_list;                                                               // temp arraylist
+        for(int f = 0; f < image_uri_lists.size(); f++) {                                           // LOOP through all rows of the 2d arraylist
+            Log.v("onDestroy", "Folder " + f);
+            temp_uri_list = image_uri_lists.get(f);                                                 //      load a row into the array list
+            for (int i = 0; i < temp_uri_list.size(); i++) {                                        //      LOOP through each uri of the arraylist to the end
+                Log.v("onDestroy", "Adding imageuri_f" + f + "_i" + i);
+                editor.putString("imageuri_f" + f + "_i" + i,
+                        temp_uri_list.get(i).toString());                                           //          store each entry into the pref file
+            }
+            temp_uri_list.clear();                                                                  //      clear the row when the end is reached
+        }
+        image_uri_lists.clear();
+
+        editor.commit();                                                                            // Commit the Edits!
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {                                                 ////// onCreateOptionsMenu() //////
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
@@ -113,41 +141,10 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             }).show();                                                              //      show a snackbar saying that folder is already used
                 }
-
                 return true;
             default:                                                                                // the user's action was not recognized.
                 return super.onOptionsItemSelected(item);
-
         }
-    }
-
-    @Override
-    protected void onDestroy() {                                                                    ////// onDestroy() //////
-        super.onDestroy();
-        Log.v("onDestroy", "Started");
-        SharedPreferences settings = getSharedPreferences("imagedata", 0);                          // load the pref file "imagedata"
-        SharedPreferences.Editor editor = settings.edit();                                          // create an editor to add data
-        editor.clear();                                                                             // clear previous data
-
-        Log.v("onDestroy", "Write folder #");
-        editor.putString("amount_of_folders", Integer.toString(image_uri_lists.size()));            // add entry for the amount of folders
-
-        Log.v("onDestroy", "Start image uri writing");
-        ArrayList<Uri> temp_uri_list;                                                               // temp arraylist
-        for(int f = 0; f < image_uri_lists.size(); f++) {                                           // LOOP through all rows of the 2d arraylist
-            Log.v("onDestroy", "Folder " + f);
-            temp_uri_list = image_uri_lists.get(f);                                                 //      load a row into the array list
-            for (int i = 0; i < temp_uri_list.size(); i++) {                                        //      LOOP through each uri of the arraylist to the end
-                Log.v("onDestroy", "Adding imageuri_f" + f + "_i" + i);
-                editor.putString("imageuri_f" + f + "_i" + i,
-                        temp_uri_list.get(i).toString());                                           //          store each entry into the pref file
-            }
-            temp_uri_list.clear();                                                                  //      clear the row when the end is reached
-        }
-        image_uri_lists.clear();
-
-        // Commit the edits!
-        editor.commit();                                                                            // commit changes
     }
 
     @Override
@@ -193,6 +190,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void sendFolderIntent() {                                                               ////// sendFolderIntent() //////
+        Intent intent;
+        // check for android build version to perform the proper intent
+        // for devices lollipop or greater
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {                     // IF lollipop or greater
+            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);                                  //      send intent to DocumentsProvider to select a directory
+            startActivityForResult(intent, SELECT_WATCH_FOLDER);
+        }
+
+    }
+
     private boolean alreadyUsed(ArrayList<ArrayList<Uri>> uri_list_2d, Uri tree) {                  ////// alreadyUsed() //////
         Log.v("alreadyUsed", "Started");
         if(uri_list_2d.size() == 0) {                                                               // IF no folder was ever selected previously
@@ -216,18 +224,6 @@ public class MainActivity extends AppCompatActivity {
                                                                                                     // this instance is handled later in the AsyncTask
     }
 
-    // sends an intent to obtain a file directory
-    private void sendFolderIntent() {                                                               ////// sendFolderIntent() //////
-        Intent intent;
-        // check for android build version to perform the proper intent
-        // for devices lollipop or greater
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {                     // IF lollipop or greater
-            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);                                  //      send intent to DocumentsProvider to select a directory
-            startActivityForResult(intent, SELECT_WATCH_FOLDER);
-        }
-
-    }
-
     private Bitmap getBitmapFromUri(Uri uri) throws IOException {                                   ////// getBitmapFromUri() a.k.a. Magic. //////
         ParcelFileDescriptor parcelFileDescriptor =
                 getContentResolver().openFileDescriptor(uri, "r");                                  // Taken from https://developer.android.com/guide/topics/providers/document-provider.html
@@ -236,6 +232,10 @@ public class MainActivity extends AppCompatActivity {
         parcelFileDescriptor.close();
         return image;
     }
+
+
+
+    ////// getRandomImage methods //////
 
     private Bitmap getRandomImage(ArrayList<Uri> uri_list) {                                        ////// getRandomImage()  //////
 
@@ -278,7 +278,13 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private class AsyncFolderLoad extends AsyncTask<Void, Void, Void> {                             /*/***////// AsyncFolderLoad class //////***/*/
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////// AsyncFolderLoad class //////                                                             ////// AsyncFolderLoad class //////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private class AsyncFolderLoad extends AsyncTask<Void, Void, Void> {
 
         final DocumentFile file_names[] = directory_path.listFiles();                               // get list of files
         final ArrayList<Uri> uri_list_temp = new ArrayList<>();                                     // create a temp array
@@ -329,7 +335,5 @@ public class MainActivity extends AppCompatActivity {
 
             if(loader != null) loader.setVisibility(View.GONE);                                     // hide the loading circle
         }
-
     }
-
 }
