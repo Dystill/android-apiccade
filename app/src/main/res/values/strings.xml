@@ -1,10 +1,14 @@
 <resources>
     <string name="app_name">Apiccadé</string>
     <string name="image_description">Nep</string>
+
     <string name="action_settings">Settings</string>
     <string name="action_folder">Choose folder</string>
     <string name="action_redo">Load a different image</string>
+    <string name="action_clear">Clear cache</string>
+
     <string name="snackbar_fab">Replace with your own action</string>
+    <string name="snackbar_clear">Image cache cleared.</string>
     <string name="snackbar_no_images">Sorry, no images were found there.</string>
     <string name="snackbar_no_folder">No folder selected.</string>
     <string name="snackbar_used_folder">That folder is already being used.</string>
