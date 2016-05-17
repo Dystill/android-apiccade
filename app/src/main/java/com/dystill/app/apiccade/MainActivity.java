@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Movie;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -19,9 +18,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.webkit.WebView;
 import android.widget.ImageView;
-import android.widget.VideoView;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -32,7 +29,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int SELECT_WATCH_FOLDER = 1;
     private ImageView image;
-    private Movie movie;
     private Uri treeUri;
     private static DocumentFile directory_path = null;
     private final ArrayList<ArrayList<Uri>> image_uri_lists = new ArrayList<>();
@@ -251,28 +247,16 @@ public class MainActivity extends AppCompatActivity {
 
     ////// getRandomImage methods //////
 
-    private int getRandomImageIndex(ArrayList<Uri> uri_list) {                                        ////// getRandomImage()  //////
-
-        Log.v("getRandomImage", "Started");
-        Random rand = new Random();                                                                 // initialize Random object
-        int image_index = rand.nextInt(uri_list.size() - 1) + 1;                                        // get a random, valid image index
-        //      the "+ 1" accounts for the first item being the parent folder uri
-
-        Log.v("getRandomImage", "Trying image #" + image_index + "of" + uri_list.size());
-
-        return image_index;
-    }
-
     private Bitmap getRandomImage(ArrayList<Uri> uri_list) {                                        ////// getRandomImage()  //////
 
         Log.v("getRandomImage", "Started");
         Random rand = new Random();                                                                 // initialize Random object
-        int i = rand.nextInt(uri_list.size() - 1) + 1;                                        // get a random, valid image index
+        int image_index = rand.nextInt(uri_list.size() - 1) + 1;                                        // get a random, valid image index
                                                                                                     //      the "+ 1" accounts for the first item being the parent folder uri
 
-        Log.v("getRandomImage", "Trying image #" + i + "of" + uri_list.size());
+        Log.v("getRandomImage", "Trying image #" + image_index + "of" + uri_list.size());
         try {
-            return getBitmapFromUri(uri_list.get(i));                                     // return a bitmap of the randomly selected uri
+            return getBitmapFromUri(uri_list.get(image_index));                                     // return a bitmap of the randomly selected uri
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -293,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
         int image_index = rand.nextInt(uri_list_temp.size() - 1) + 1;                                   // get a random, valid image index
                                                                                                     //      the "+ 1" accounts for the first item being the parent folder uri
 
-        Log.v("getRandomImage2D", "Trying image #" + image_index + " in folder #" + folder_index);
+        Log.v("getRandomImage2D", "Trying image #" + image_index + "in folder #" + folder_index);
         try {
             return getBitmapFromUri(uri_list_temp.get(image_index));                                // return a bitmap of the selected uri
         }
@@ -320,10 +304,8 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute() {                                                             ////// onPreExecute //////
             Log.v("Async", "PreStarted");
             super.onPreExecute();
-
             image.setImageAlpha(0);                                                                 // hide previous image (used instead of setVisibility() to preserve image dimensions)
-
-            if(loader != null) loader.setVisibility(View.VISIBLE);                                  // show loading circle
+            if(loader != null) loader.setVisibility(View.VISIBLE);                                                       // show loading circle
         }
 
         @Override
@@ -334,7 +316,7 @@ public class MainActivity extends AppCompatActivity {
 
             int i = 0;
             for (DocumentFile file : file_names) {                                                  // LOOP through all elements in the list of files
-                if(file.getName().matches("(.*)\\.(png|jpg|bmp|gif|mp4)")) {                                  //      IF file is an image
+                if(file.getName().matches("(.*).(png|jpg|bmp)")) {                                  //      IF file is an image
                     uri_list_temp.add(file_names[i++].getUri());                                    //      add the image's uri to the temp array
                 }
                 else
@@ -348,31 +330,8 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(Void params) {                                                 ////// onPostExecute //////
             Log.v("Async", "postStarted");
 
-            int image_index = getRandomImageIndex(uri_list_temp);
-            Bitmap bitmap;
-            Uri rand_image = uri_list_temp.get(image_index);
-
-
             if(uri_list_temp.size() > 1) {                                                          // IF the temp array has no image uris (only 1 for the directory uri added in doInBackground())
-                if(rand_image.getPath().matches("(.*)\\.(png|jpg|bmp)")) {
-                    Log.v("Async", "found image");
-                    try {
-                        bitmap = getBitmapFromUri(rand_image);                                     // return a bitmap of the randomly selected uri
-                    }
-                    catch (IOException e) {
-                        e.printStackTrace();
-                        bitmap = null;
-                    }
-                    image.setImageBitmap(bitmap);                                //      call getRandomImage()
-                    image.setImageAlpha(255);                                                               // make the ImageView opaque
-                }
-                else {
-                    Log.v("Async", "found video");
-                    movie = Movie.decodeFile(rand_image.getPath());
-
-                    Log.v("Async", rand_image.getPath());
-
-                }
+                image.setImageBitmap(getRandomImage(uri_list_temp));                                //      call getRandomImage()
                 image_uri_lists.add(uri_list_temp);                                                 //      add the temp array to the 2d array
                 amount_of_folders = image_uri_lists.size();                                         //      update the amount of folders
             }
@@ -381,6 +340,8 @@ public class MainActivity extends AppCompatActivity {
                 Snackbar.make(view, R.string.snackbar_no_images, Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();                                          //      show a snackbar saying no images were found
             }
+
+            image.setImageAlpha(255);                                                               // make the ImageView opaque
 
             if(loader != null) loader.setVisibility(View.GONE);                                     // hide the loading circle
         }
