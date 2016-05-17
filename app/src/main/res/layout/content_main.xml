@@ -17,7 +17,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/colorBackground"
-        tools:ignore="UselessParent">
+        tools:ignore="UselessParent"
+        android:layout_weight="1">
 
         <LinearLayout
             android:id="@+id/linear_view_scroll"

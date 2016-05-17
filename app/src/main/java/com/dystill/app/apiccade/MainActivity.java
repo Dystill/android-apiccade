@@ -1,5 +1,6 @@
 package com.dystill.app.apiccade;
 
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -28,6 +29,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     private static final int SELECT_WATCH_FOLDER = 1;
+    private static final int SELECT_IMAGES_KITKAT = 2;
     private ImageView image;
     private Uri treeUri;
     private static DocumentFile directory_path = null;
@@ -196,15 +198,54 @@ public class MainActivity extends AppCompatActivity {
                 showSnackbarInMain(R.string.snackbar_no_folder, R.string.button_snackbar_retry);                                                                  //      show a snackbar saying no folder was selected
             }
         }
+        else if(requestCode == SELECT_IMAGES_KITKAT) {
+            if (resultCode == RESULT_OK) {                                                          // IF the request was successful
+                image = (ImageView) findViewById(R.id.main_image);                                  //      find the ImageView
+
+                if(data != null) {
+                    ClipData clip = data.getClipData();
+                    ArrayList<Uri> temp_uri_list = new ArrayList<>();
+
+                    Log.v("kitkat", "clip and temp: #" + clip.getItemCount());
+
+                    for (int i = 0; i < clip.getItemCount(); i++) {
+                        ClipData.Item item = clip.getItemAt(i);
+                        Log.v("kitkat", "Adding: " + item.getUri().getPath());
+                        temp_uri_list.add(item.getUri());
+                        Log.v("kitkat", "Added: " + item.getUri().getPath());
+                    }
+
+                    image_uri_lists.add(temp_uri_list);
+                    amount_of_folders = image_uri_lists.size();
+                    image.setImageBitmap(getRandomImageFrom2d(image_uri_lists));
+                }
+            }
+            else {
+                Log.v("onActivityResult", "Else");                                                  // ELSE
+                showSnackbarInMain(R.string.snackbar_no_folder, R.string.button_snackbar_retry);                                                                  //      show a snackbar saying no folder was selected
+            }
+        }
     }
 
     private void sendAddFolderIntent() {                                                               ////// sendFolderIntent() //////
         Intent intent;
-        // check for android build version to perform the proper intent
-        // for devices lollipop or greater
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {                     // IF lollipop or greater
             intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);                                  //      send intent to DocumentsProvider to select a directory
             startActivityForResult(intent, SELECT_WATCH_FOLDER);
+        }
+        else {
+            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.setType("image/*");
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            Log.v("kitkat", "intent made");
+            if (intent.resolveActivityInfo(getPackageManager(), 0) != null) {
+                startActivityForResult(intent, SELECT_IMAGES_KITKAT);
+                Log.v("kitkat", "intent passed");
+            }
+            else {
+                // if you reach this place, it means there is no any file
+                // explorer app installed on your device
+            }
         }
 
     }
@@ -275,13 +316,15 @@ public class MainActivity extends AppCompatActivity {
 
     private Bitmap getRandomImageFrom2d(ArrayList<ArrayList<Uri>> uri_list_2d) {                    ////// getRandomImageFrom2d  //////
 
+        int offset = (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? 1 : 0);
+
         Log.v("getRandomImage2D", "Started");
         Random rand = new Random();                                                                 // initialize Random object
         int f, i;
 
         do {
             f = rand.nextInt(uri_list_2d.size());                                                   // get a random, valid folder index
-            i = rand.nextInt(uri_list_2d.get(f).size() - 1) + 1;                                         // get a random, valid image index
+            i = rand.nextInt(uri_list_2d.get(f).size() - offset) + offset;                                         // get a random, valid image index
             Log.v("getRandomImage2D", "Checking image #" + i + "in folder #" + f);
         } while (i == prev_image_position && f == prev_image_folder && uri_list_2d.size() > 1);
                                                                                                     //      the "+ 1" accounts for the first item being the parent folder uri
@@ -368,7 +411,6 @@ public class MainActivity extends AppCompatActivity {
                 amount_of_folders = image_uri_lists.size();                                         //      update the amount of folders
             }
             else {                                                                                  // ELSE
-                View view = findViewById(R.id.linear_view);
                 showSnackbarInMain(R.string.snackbar_no_images);                                          //      show a snackbar saying no images were found
             }
 
