@@ -16,6 +16,9 @@
     <string name="snackbar_no_redo">Only one image is currently loaded.</string>
     <string name="button_snackbar_retry">Retry</string>
     <string name="button_snackbar_add">Add Folder</string>
-
     <string name="error_generic">Something happened.</string>
+
+    <string name="pref_folder">Folder Settings</string>
+    <string name="pref_title_delete">Remove a folder</string>
+    <string name="pref_subtitle_delete">Select a folder to no longer pull images from</string>
 </resources>
