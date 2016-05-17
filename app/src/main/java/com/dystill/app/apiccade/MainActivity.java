@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView image;
     private Uri treeUri;
     private static DocumentFile directory_path = null;
-    private ArrayList<ArrayList<Uri>> image_uri_lists = new ArrayList<>();
+    private final ArrayList<ArrayList<Uri>> image_uri_lists = new ArrayList<>();
     private int amount_of_folders = 0;
 
     @Override
@@ -101,8 +101,19 @@ public class MainActivity extends AppCompatActivity {
                 sendFolderIntent();                                                                 // call sendFolderIntent()
                 return true;
             case R.id.action_redo:                                                                  // redo action button
-                if(image_uri_lists.size() > 1)                                                      // IF images have been added
+                if(image_uri_lists.size() > 0)                                                      // IF a folder have been added
                     image.setImageBitmap(getRandomImageFrom2d(image_uri_lists));                    //      re-roll an image out of all folders
+                else {                                                                              // ELSE
+                    View view = findViewById(R.id.linear_view);
+                    Snackbar.make(view, R.string.snackbar_no_folders, Snackbar.LENGTH_LONG)
+                            .setAction(R.string.button_snackbar_add, new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    sendFolderIntent();
+                                }
+                            }).show();                                                              //      show a snackbar saying that folder is already used
+                }
+
                 return true;
             default:                                                                                // the user's action was not recognized.
                 return super.onOptionsItemSelected(item);
@@ -119,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         editor.clear();                                                                             // clear previous data
 
         Log.v("onDestroy", "Write folder #");
-        editor.putString("amount_of_folders", Integer.toString(image_uri_lists.size()));                 // add entry for the amount of folders
+        editor.putString("amount_of_folders", Integer.toString(image_uri_lists.size()));            // add entry for the amount of folders
 
         Log.v("onDestroy", "Start image uri writing");
         ArrayList<Uri> temp_uri_list;                                                               // temp arraylist
@@ -152,33 +163,32 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.v("onActivityResult", "If");
 
-                ArrayList<Uri> temp_uri_list = new ArrayList<>();                                   //      create a temp arraylist
                 if (!alreadyUsed(image_uri_lists, treeUri)) {                                       //      IF the folder was already selected previously -> calls alreadyUsed()
                     Log.v("onActivityResult", "Else");
                     directory_path = DocumentFile.fromTreeUri(this, treeUri);                       //          convert the uri from the intent to a DocumentFile
                     new AsyncFolderLoad().execute();                                                //          call the AsyncFolderLoad AsyncTask
                 }
                 else {                                                                              //      ELSE
-                    View view = findViewById(R.id.linear_view);                                     //          get main layout view
-                    Snackbar.make(view, R.string.snackbar_folder_exists, Snackbar.LENGTH_LONG)      //          show a snackbar saying that folder is already used
-                            .setAction(R.string.snackbar_retry, new View.OnClickListener() {
+                    View view = findViewById(R.id.linear_view);
+                    Snackbar.make(view, R.string.snackbar_used_folder, Snackbar.LENGTH_LONG)
+                            .setAction(R.string.button_snackbar_retry, new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
                                     sendFolderIntent();
                                 }
-                            }).show();
+                            }).show();                                                              //          show a snackbar saying that folder is already used
                 }
             }
             else {
                 Log.v("onActivityResult", "Else");                                                  // ELSE
                 View view = findViewById(R.id.linear_view);
-                Snackbar.make(view, R.string.snackbar_no_folder, Snackbar.LENGTH_LONG)              //      show a snackbar saying no folder was selected
-                        .setAction(R.string.snackbar_retry, new View.OnClickListener() {
+                Snackbar.make(view, R.string.snackbar_no_folder, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.button_snackbar_retry, new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
                                 sendFolderIntent();
                             }
-                        }).show();
+                        }).show();                                                                  //      show a snackbar saying no folder was selected
             }
         }
     }
@@ -271,14 +281,15 @@ public class MainActivity extends AppCompatActivity {
     private class AsyncFolderLoad extends AsyncTask<Void, Void, Void> {                             /*/***////// AsyncFolderLoad class //////***/*/
 
         final DocumentFile file_names[] = directory_path.listFiles();                               // get list of files
-        ArrayList<Uri> uri_list_temp = new ArrayList<>();                                           // create a temp array
+        final ArrayList<Uri> uri_list_temp = new ArrayList<>();                                     // create a temp array
+        final View loader = findViewById(R.id.loading_panel);                                         // get the loading circle panel
 
         @Override
         protected void onPreExecute() {                                                             ////// onPreExecute //////
             Log.v("Async", "PreStarted");
             super.onPreExecute();
             image.setImageAlpha(0);                                                                 // hide previous image (used instead of setVisibility() to preserve image dimensions)
-            findViewById(R.id.loading_panel).setVisibility(View.VISIBLE);                           // show loading circle
+            if(loader != null) loader.setVisibility(View.VISIBLE);                                                       // show loading circle
         }
 
         @Override
@@ -310,12 +321,13 @@ public class MainActivity extends AppCompatActivity {
             }
             else {                                                                                  // ELSE
                 View view = findViewById(R.id.linear_view);
-                Snackbar.make(view, R.string.snackbar_no_images, Snackbar.LENGTH_LONG)              //      show a snackbar saying no images were found
-                        .setAction("Action", null).show();
+                Snackbar.make(view, R.string.snackbar_no_images, Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();                                          //      show a snackbar saying no images were found
             }
 
             image.setImageAlpha(255);                                                               // make the ImageView opaque
-            findViewById(R.id.loading_panel).setVisibility(View.GONE);                              // hide the loading circle
+
+            if(loader != null) loader.setVisibility(View.GONE);                                     // hide the loading circle
         }
 
     }
