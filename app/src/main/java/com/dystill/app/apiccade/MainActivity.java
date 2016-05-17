@@ -63,10 +63,11 @@ public class MainActivity extends AppCompatActivity {
 
         Log.v("onCreate", "Getting image uris");
         int i;
-        ArrayList<Uri> temp_uri_list = new ArrayList<>();                                           // create a temporary arraylist holder
+        ArrayList<Uri> temp_uri_list;                                                               // create a temporary arraylist holder
 
         for(int f = 0; f < amount_of_folders; f++) {                                                // LOOP through image uris of each folder
             Log.v("onCreate", "Folder " + f);
+            temp_uri_list = new ArrayList<>();                                                      //      allocate new pointer for next folder
             i = 0;
             while (settings.contains("imageuri_f" + f + "_i" + i)) {                                //      LOOP while there are still uris in the file
                 temp_uri_list.add(Uri.parse(settings
@@ -100,7 +101,8 @@ public class MainActivity extends AppCompatActivity {
                 sendFolderIntent();                                                                 // call sendFolderIntent()
                 return true;
             case R.id.action_redo:                                                                  // redo action button
-                // new AsyncRandomImageLoad().execute();
+                if(image_uri_lists.size() > 1)                                                      // IF images have been added
+                    image.setImageBitmap(getRandomImageFrom2d(image_uri_lists));                    //      re-roll an image out of all folders
                 return true;
             default:                                                                                // the user's action was not recognized.
                 return super.onOptionsItemSelected(item);
@@ -131,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
             }
             temp_uri_list.clear();                                                                  //      clear the row when the end is reached
         }
+        image_uri_lists.clear();
 
         // Commit the edits!
         editor.commit();                                                                            // commit changes
