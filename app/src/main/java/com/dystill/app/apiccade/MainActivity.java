@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
     private Uri treeUri;
     private static DocumentFile directory_path = null;
     private final ArrayList<ArrayList<Uri>> image_uri_lists = new ArrayList<>();
+    private int prev_image_folder;
+    private int prev_image_position;
     private int amount_of_folders = 0;
 
     @Override
@@ -49,8 +51,7 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, R.string.snackbar_fab, Snackbar.LENGTH_LONG)                    // placeholder snackbar on click
-                        .setAction("Action", null).show();
+                showSnackbarInMain(R.string.snackbar_fab);                                          // placeholder snackbar on click
             }
         });
 
@@ -125,22 +126,26 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.action_settings:                                                              // settings action button
                 return true;
-            case R.id.action_folder:                                                                // folder action button
-                sendFolderIntent();                                                                 // call sendFolderIntent()
+            case R.id.action_add:                                                                   // add folder action button
+                sendAddFolderIntent();                                                                 // call sendAddFolderIntent()
                 return true;
             case R.id.action_redo:                                                                  // redo action button
-                if(image_uri_lists.size() > 0)                                                      // IF a folder have been added
-                    image.setImageBitmap(getRandomImageFrom2d(image_uri_lists));                    //      re-roll an image out of all folders
-                else {                                                                              // ELSE
-                    View view = findViewById(R.id.linear_view);
-                    Snackbar.make(view, R.string.snackbar_no_folders, Snackbar.LENGTH_LONG)
-                            .setAction(R.string.button_snackbar_add, new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    sendFolderIntent();
-                                }
-                            }).show();                                                              //      show a snackbar saying that folder is already used
+                Log.v("redo", "Started");
+                if(image_uri_lists.size() == 0) {                                                   // IF there are no folders
+                    Log.v("redo", "no folder");
+                    showSnackbarInMain(R.string.snackbar_no_folders, R.string.button_snackbar_add);                                                             //      show a snackbar saying that folder is already used
                 }
+                else if (image_uri_lists.size() == 1 && image_uri_lists.get(0).size() == 1 + 1) {   // ELSE IF there is only one image (+ one directory)
+                    Log.v("redo", "no folder");
+                    showSnackbarInMain(R.string.snackbar_no_redo, R.string.button_snackbar_add);    // show a snackbar
+                }
+                else if (image_uri_lists.size() > 0) {                                              // IF a folder have been added
+                    Log.v("redo", "setting random image: " + image_uri_lists.size() +
+                            " " + image_uri_lists.get(0).size());
+                    image.setImageBitmap(getRandomImageFrom2d(image_uri_lists));                    //      re-roll an image out of all folders
+                }
+                else
+                    showSnackbarInMain(R.string.error_generic);
                 return true;
             case R.id.action_clear:                                                                 // clear cache action button
                 image.setImageResource(R.drawable.start);
@@ -148,9 +153,7 @@ public class MainActivity extends AppCompatActivity {
                     image_uri_lists.get(f).clear();
                 }
                 image_uri_lists.clear();
-                View view = findViewById(R.id.linear_view);
-                Snackbar.make(view, R.string.snackbar_clear, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                showSnackbarInMain(R.string.snackbar_clear);
                 return true;
             default:                                                                                // the user's action was not recognized.
                 return super.onOptionsItemSelected(item);
@@ -176,31 +179,17 @@ public class MainActivity extends AppCompatActivity {
                     new AsyncFolderLoad().execute();                                                //          call the AsyncFolderLoad AsyncTask
                 }
                 else {                                                                              //      ELSE
-                    View view = findViewById(R.id.linear_view);
-                    Snackbar.make(view, R.string.snackbar_used_folder, Snackbar.LENGTH_LONG)
-                            .setAction(R.string.button_snackbar_retry, new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    sendFolderIntent();
-                                }
-                            }).show();                                                              //          show a snackbar saying that folder is already used
+                    showSnackbarInMain(R.string.snackbar_used_folder, R.string.button_snackbar_retry);                                                              //          show a snackbar saying that folder is already used
                 }
             }
             else {
                 Log.v("onActivityResult", "Else");                                                  // ELSE
-                View view = findViewById(R.id.linear_view);
-                Snackbar.make(view, R.string.snackbar_no_folder, Snackbar.LENGTH_LONG)
-                        .setAction(R.string.button_snackbar_retry, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                sendFolderIntent();
-                            }
-                        }).show();                                                                  //      show a snackbar saying no folder was selected
+                showSnackbarInMain(R.string.snackbar_no_folder, R.string.button_snackbar_retry);                                                                  //      show a snackbar saying no folder was selected
             }
         }
     }
 
-    private void sendFolderIntent() {                                                               ////// sendFolderIntent() //////
+    private void sendAddFolderIntent() {                                                               ////// sendFolderIntent() //////
         Intent intent;
         // check for android build version to perform the proper intent
         // for devices lollipop or greater
@@ -247,16 +236,18 @@ public class MainActivity extends AppCompatActivity {
 
     ////// getRandomImage methods //////
 
-    private Bitmap getRandomImage(ArrayList<Uri> uri_list) {                                        ////// getRandomImage()  //////
+    private Bitmap getRandomImage(ArrayList<Uri> uri_list, int pos) {                               ////// getRandomImage()  //////
 
         Log.v("getRandomImage", "Started");
         Random rand = new Random();                                                                 // initialize Random object
-        int image_index = rand.nextInt(uri_list.size() - 1) + 1;                                        // get a random, valid image index
+        int i = rand.nextInt(uri_list.size() - 1) + 1;                                              // get a random, valid image index
                                                                                                     //      the "+ 1" accounts for the first item being the parent folder uri
+        prev_image_folder = pos;
+        prev_image_position = i;
 
-        Log.v("getRandomImage", "Trying image #" + image_index + "of" + uri_list.size());
+        Log.v("getRandomImage", "Trying image #" + i + "of" + uri_list.size());
         try {
-            return getBitmapFromUri(uri_list.get(image_index));                                     // return a bitmap of the randomly selected uri
+            return getBitmapFromUri(uri_list.get(i));                                               // return a bitmap of the randomly selected uri
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -271,15 +262,22 @@ public class MainActivity extends AppCompatActivity {
 
         Log.v("getRandomImage2D", "Started");
         Random rand = new Random();                                                                 // initialize Random object
-        int folder_index = rand.nextInt(uri_list_2d.size());                                        // get a random, valid folder index
+        int f, i;
 
-        uri_list_temp = uri_list_2d.get(folder_index);                                              // store the random folder/row into the temp array
-        int image_index = rand.nextInt(uri_list_temp.size() - 1) + 1;                                   // get a random, valid image index
+        do {
+            f = rand.nextInt(uri_list_2d.size());                                                   // get a random, valid folder index
+            uri_list_temp = uri_list_2d.get(f);                                                     // store the random folder/row into the temp array
+            i = rand.nextInt(uri_list_temp.size() - 1) + 1;                                         // get a random, valid image index
+            Log.v("getRandomImage2D", "Checking image #" + i + "in folder #" + f);
+        } while (i == prev_image_position && f == prev_image_folder && uri_list_2d.size() > 1);
                                                                                                     //      the "+ 1" accounts for the first item being the parent folder uri
 
-        Log.v("getRandomImage2D", "Trying image #" + image_index + "in folder #" + folder_index);
+        Log.v("getRandomImage2D", "Choosing image #" + i + "in folder #" + f);
+        prev_image_folder = f;
+        prev_image_position = i;
+
         try {
-            return getBitmapFromUri(uri_list_temp.get(image_index));                                // return a bitmap of the selected uri
+            return getBitmapFromUri(uri_list_temp.get(i));                                          // return a bitmap of the selected uri
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -287,6 +285,26 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+    ////// generic Snackbar methods //////
+
+    private void showSnackbarInMain(int message, int button) {                                      // generic snackbar with button
+        View view = findViewById(R.id.scroll_view);
+        Snackbar.make(view, message, Snackbar.LENGTH_INDEFINITE)
+                .setAction(button, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        sendAddFolderIntent();
+                    }
+                }).show();
+    }
+
+    private void showSnackbarInMain(int message) {                                                  // generic snackbar without button
+        View view = findViewById(R.id.scroll_view);
+        Snackbar.make(view, message, Snackbar.LENGTH_LONG)
+                .setAction("Action", null).show();
+    }
+
 
 
 
@@ -331,14 +349,13 @@ public class MainActivity extends AppCompatActivity {
             Log.v("Async", "postStarted");
 
             if(uri_list_temp.size() > 1) {                                                          // IF the temp array has no image uris (only 1 for the directory uri added in doInBackground())
-                image.setImageBitmap(getRandomImage(uri_list_temp));                                //      call getRandomImage()
+                image.setImageBitmap(getRandomImage(uri_list_temp, image_uri_lists.size()));        //      call getRandomImage()
                 image_uri_lists.add(uri_list_temp);                                                 //      add the temp array to the 2d array
                 amount_of_folders = image_uri_lists.size();                                         //      update the amount of folders
             }
             else {                                                                                  // ELSE
                 View view = findViewById(R.id.linear_view);
-                Snackbar.make(view, R.string.snackbar_no_images, Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();                                          //      show a snackbar saying no images were found
+                showSnackbarInMain(R.string.snackbar_no_images);                                          //      show a snackbar saying no images were found
             }
 
             image.setImageAlpha(255);                                                               // make the ImageView opaque

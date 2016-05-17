@@ -10,10 +10,10 @@
         android:title="@string/action_redo"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_folder"
+        android:id="@+id/action_add"
         android:orderInCategory="200"
-        android:icon="@drawable/ic_folder_white_24px"
-        android:title="@string/action_folder"
+        android:icon="@drawable/ic_create_new_folder_white_24px"
+        android:title="@string/action_add"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_clear"
