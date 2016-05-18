@@ -14,11 +14,11 @@
     <string name="snackbar_used_folder">That folder is already being used.</string>
     <string name="snackbar_no_folders">No folders have been added yet.</string>
     <string name="snackbar_no_redo">Only one image is currently loaded.</string>
-    <string name="button_snackbar_retry">Retry</string>
+    <string name="button_snackbar_retry">Try Again</string>
     <string name="button_snackbar_add">Add Folder</string>
     <string name="error_generic">Something happened.</string>
 
     <string name="pref_folder">Folder Settings</string>
     <string name="pref_title_delete">Remove a folder</string>
-    <string name="pref_subtitle_delete">Select a folder to no longer pull images from</string>
+    <string name="pref_subtitle_delete">Select the folder you don\'t want to pull images from</string>
 </resources>
