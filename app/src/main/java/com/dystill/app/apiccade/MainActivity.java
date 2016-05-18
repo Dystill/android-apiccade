@@ -34,10 +34,11 @@ public class MainActivity extends AppCompatActivity {
     private ImageView image;
     private Snackbar snackbar;
 
+    private final ArrayList<Uri> DIRECTORY_URI_LIST = new ArrayList<>();
+    private final ArrayList<ArrayList<Uri>> IMAGE_URI_LISTS = new ArrayList<>();
+
     private Uri treeUri;
-    private DocumentFile directory_path = null;
-    private final ArrayList<Uri> directory_uris = new ArrayList<>();
-    private final ArrayList<ArrayList<Uri>> image_uri_lists = new ArrayList<>();
+    private DocumentFile directory_doc = null;
     private int prev_image_folder;
     private int prev_image_position;
     private int amount_of_folders = 0;
@@ -78,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
         for(int f = 0; f < amount_of_folders; f++) {                                                // LOOP through image uris of each folder
             Log.v("onCreate", "Folder " + f);
 
-            directory_uris.add(Uri.parse(settings.getString("imageuri_f" + f, "")));
+            DIRECTORY_URI_LIST.add(Uri.parse(settings.getString("imageuri_f" + f, "")));
 
             temp_uri_list = new ArrayList<>();                                                      //      allocate new pointer for next folder
             i = 0;
@@ -87,15 +88,15 @@ public class MainActivity extends AppCompatActivity {
                         .getString("imageuri_f" + f + "_i" + i++, "")));                            //          add each stored uri to the temp arraylist
                 Log.v("onCreate", "Added " + "imageuri_f" + f + "_i" + i);
             }
-            image_uri_lists.add(temp_uri_list);                                                     //      add the temp arraylist to the 2d arraylist
+            IMAGE_URI_LISTS.add(temp_uri_list);                                                     //      add the temp arraylist to the 2d arraylist
         }
 
-        if(image_uri_lists.isEmpty()) {                                                             // IF there are no folders
+        if(IMAGE_URI_LISTS.isEmpty()) {                                                             // IF there are no folders
             if (image != null) image.setImageResource(R.drawable.start);                            //      use a starting image in drawable
         }
         else {                                                                                      // ELSE
             image.setImageBitmap(getImageFrom2d(
-                    image_uri_lists, prev_image_folder, prev_image_position));                      //      get the previously displayed image to redisplay
+                    IMAGE_URI_LISTS, prev_image_folder, prev_image_position));                      //      get the previously displayed image to redisplay
         }
     }
 
@@ -108,22 +109,22 @@ public class MainActivity extends AppCompatActivity {
         editor.clear();                                                                             // clear previous data
 
         Log.v("onDestroy", "Write folder #");
-        editor.putInt("amount_of_folders", image_uri_lists.size());            // add entry for the amount of folders
+        editor.putInt("amount_of_folders", IMAGE_URI_LISTS.size());            // add entry for the amount of folders
         editor.putInt("current_folder", prev_image_folder);            // add entry for the amount of folders
         editor.putInt("current_position", prev_image_position);            // add entry for the amount of folders
 
         Log.v("onDestroy", "Start image uri writing");
-        for(int f = 0; f < image_uri_lists.size(); f++) {                                           // LOOP through all rows of the 2d arraylist
-            editor.putString("imageuri_f" + f, directory_uris.get(f).toString());
+        for(int f = 0; f < IMAGE_URI_LISTS.size(); f++) {                                           // LOOP through all rows of the 2d arraylist
+            editor.putString("imageuri_f" + f, DIRECTORY_URI_LIST.get(f).toString());
             Log.v("onDestroy", "Folder " + f);
-            for (int i = 0; i < image_uri_lists.get(f).size(); i++) {                                        //      LOOP through each uri of the arraylist to the end
+            for (int i = 0; i < IMAGE_URI_LISTS.get(f).size(); i++) {                                        //      LOOP through each uri of the arraylist to the end
                 Log.v("onDestroy", "Adding imageuri_f" + f + "_i" + i);
                 editor.putString("imageuri_f" + f + "_i" + i,
-                        image_uri_lists.get(f).get(i).toString());                                           //          store each entry into the pref file
+                        IMAGE_URI_LISTS.get(f).get(i).toString());                                           //          store each entry into the pref file
             }
-            image_uri_lists.get(f).clear();                                                                  //      clear the row when the end is reached
+            IMAGE_URI_LISTS.get(f).clear();                                                                  //      clear the row when the end is reached
         }
-        image_uri_lists.clear();
+        IMAGE_URI_LISTS.clear();
 
         editor.commit();                                                                            // Commit the Edits!
     }
@@ -148,16 +149,16 @@ public class MainActivity extends AppCompatActivity {
 
             case R.id.action_redo:                                                                  // redo action button
                 Log.v("redo", "Started");
-                if(image_uri_lists.size() == 0) {                                                   // IF there are no folders
+                if(IMAGE_URI_LISTS.size() == 0) {                                                   // IF there are no folders
                     Log.v("redo", "no folder");
                     showSnackbarInMain(R.string.snackbar_no_folders, R.string.button_snackbar_add);                                                             //      show a snackbar saying that folder is already used
                 }
-                else if (image_uri_lists.size() == 1 && image_uri_lists.get(0).size() == 1) {       // ELSE IF there is only one image
+                else if (IMAGE_URI_LISTS.size() == 1 && IMAGE_URI_LISTS.get(0).size() == 1) {       // ELSE IF there is only one image
                     Log.v("redo", "no folder");
                     showSnackbarInMain(R.string.snackbar_no_redo, R.string.button_snackbar_add);    // show a snackbar
                 }
-                else if (image_uri_lists.size() > 0) {                                              // IF a folder has been added
-                    image.setImageBitmap(getRandomImageFrom2d(image_uri_lists));                    //      re-roll an image out of all folders
+                else if (IMAGE_URI_LISTS.size() > 0) {                                              // IF a folder has been added
+                    image.setImageBitmap(getRandomImageFrom2d(IMAGE_URI_LISTS));                    //      re-roll an image out of all folders
                 }
                 else
                     showSnackbarInMain(R.string.error_generic);
@@ -165,10 +166,10 @@ public class MainActivity extends AppCompatActivity {
 
             case R.id.action_clear:                                                                 // clear cache action button
                 image.setImageResource(R.drawable.start);
-                for(int f = 0; f < image_uri_lists.size(); f++) {                                   // LOOP through all rows of the 2d arraylist
-                    image_uri_lists.get(f).clear();
+                for(int f = 0; f < IMAGE_URI_LISTS.size(); f++) {                                   // LOOP through all rows of the 2d arraylist
+                    IMAGE_URI_LISTS.get(f).clear();
                 }
-                image_uri_lists.clear();
+                IMAGE_URI_LISTS.clear();
                 showSnackbarInMain(R.string.snackbar_clear);
                 return true;
 
@@ -190,9 +191,9 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.v("onActivityResult", "If");
 
-                if (!alreadyUsed(image_uri_lists, treeUri)) {                                       //      IF the folder was already selected previously -> calls alreadyUsed()
+                if (!alreadyUsed(IMAGE_URI_LISTS, treeUri)) {                                       //      IF the folder was already selected previously -> calls alreadyUsed()
                     Log.v("onActivityResult", "Else");
-                    directory_path = DocumentFile.fromTreeUri(this, treeUri);                       //          convert the uri from the intent to a DocumentFile
+                    directory_doc = DocumentFile.fromTreeUri(this, treeUri);                       //          convert the uri from the intent to a DocumentFile
                     new AsyncFolderLoad().execute();                                                //          call the AsyncFolderLoad AsyncTask
                 }
                 else {                                                                              //      ELSE
@@ -221,9 +222,9 @@ public class MainActivity extends AppCompatActivity {
                         Log.v("kitkat", "Added: " + item.getUri().getPath());
                     }
 
-                    image_uri_lists.add(temp_uri_list);
-                    amount_of_folders = image_uri_lists.size();
-                    image.setImageBitmap(getRandomImageFrom2d(image_uri_lists));
+                    IMAGE_URI_LISTS.add(temp_uri_list);
+                    amount_of_folders = IMAGE_URI_LISTS.size();
+                    image.setImageBitmap(getRandomImageFrom2d(IMAGE_URI_LISTS));
                 }
             }
             else {
@@ -268,9 +269,9 @@ public class MainActivity extends AppCompatActivity {
 
             for (int f = 0; f < uri_list_2d.size(); f++) {                                          // LOOP through each row of the current 2d arraylist
                 Log.v("alreadyUsed", "Folder #" + f);
-                Log.v("alreadyUsed", tree.getPath() + " vs " + directory_uris.get(f).getPath());
+                Log.v("alreadyUsed", tree.getPath() + " vs " + DIRECTORY_URI_LIST.get(f).getPath());
 
-                if (tree.equals(directory_uris.get(f))) {                                           //      IF the first entry of the row is the same as the selected directory
+                if (tree.equals(DIRECTORY_URI_LIST.get(f))) {                                           //      IF the first entry of the row is the same as the selected directory
                     return true;                                                                    //          return TRUE (YES alreadyUsed)
                 }
             }
@@ -314,7 +315,8 @@ public class MainActivity extends AppCompatActivity {
         prev_image_folder = f;
         prev_image_position = i;
 
-        // Log.v("getRandomImage", "Trying image #" + i + "of" + uri_list.size());
+        Log.v("getRandomImage", "Trying image #" + i + "of" + uri_list.size());
+        Log.v("getRandomImage", uri_list.get(i).getPath());
 
         try {
             return getBitmapFromUri(uri_list.get(i));                                               // return a bitmap of the randomly selected uri
@@ -338,20 +340,24 @@ public class MainActivity extends AppCompatActivity {
             f = rand.nextInt(uri_list_2d.size());                                                   // get a random, valid folder index
             i = rand.nextInt(uri_list_2d.get(f).size());                                            // get a random, valid image index
 
-            // Log.v("getRandomImage2D", "Checking image #" + i + "in folder #" + f);
+            Log.v("getRandomImage2D", "Checking image #" + i +
+                    "/" + uri_list_2d.get(f).size() + " in folder #" + f);
 
         } while ((uri_list_2d.get(0).size() > 1 || uri_list_2d.size() > 1) &&
                  (i == prev_image_position && f == prev_image_folder));                             // WHILE there is more than 1 image in the first array OR there is more than 1 folder
                                                                                                     // AND both indexes are equal to the previous image's
-        // Log.v("getRandomImage2D", "Selecting image #" + i + "in folder #" + f);
+        Log.v("getRandomImage2D", "Selecting image #" + i);
+        Log.v("getRandomImage2D", uri_list_2d.get(f).get(i).getPath());
 
         prev_image_folder = f;
         prev_image_position = i;
 
         try {
+            Log.v("getRandomImage2D", "try");
             return getBitmapFromUri(uri_list_2d.get(f).get(i));                                          // return a bitmap of the selected uri
         }
         catch (IOException e) {
+            Log.v("getRandomImage2D", "catch");
             e.printStackTrace();
             return null;
         }
@@ -396,7 +402,7 @@ public class MainActivity extends AppCompatActivity {
 
     private class AsyncFolderLoad extends AsyncTask<Void, Void, Void> {
 
-        final DocumentFile file_names[] = directory_path.listFiles();                               // get list of files
+        final DocumentFile file_names[] = directory_doc.listFiles();                               // get list of files
         final ArrayList<Uri> temp_uri_list = new ArrayList<>();                                     // create a temp array
         final View loader = findViewById(R.id.loading_panel);                                       // get the loading circle panel
 
@@ -412,12 +418,12 @@ public class MainActivity extends AppCompatActivity {
         protected Void doInBackground(Void... params) {                                             ////// doInBackground //////
             Log.v("Async", "doStarted");
 
-            directory_uris.add(treeUri);                                                             // add the directory path to the first spot
+            DIRECTORY_URI_LIST.add(treeUri);                                                             // add the directory path to the first spot
 
-            int i = 0;
             for (DocumentFile file : file_names) {                                                  // LOOP through all elements in the list of files
-                if(file.getName().matches("(.*).(png|jpg|bmp)")) {                                  //      IF file is an image
-                    temp_uri_list.add(file_names[i++].getUri());                                    //      add the image's uri to the temp array
+                if(file.getName().matches("(.*)\\.(png|jpg|bmp)")) {                                  //      IF file is an image
+                    Log.d("Listed Files", file.getName() + " Added.");
+                    temp_uri_list.add(file.getUri());                                    //      add the image's uri to the temp array
                 }
                 else
                     Log.d("Listed Files", file.getName() + " Skipped.");
@@ -431,9 +437,9 @@ public class MainActivity extends AppCompatActivity {
             Log.v("Async", "postStarted");
 
             if(temp_uri_list.size() > 0) {                                                          // IF the temp array has no image uris (only 1 for the directory uri added in doInBackground())
-                image.setImageBitmap(getRandomImage(temp_uri_list, image_uri_lists.size()));        //      call getRandomImage()
-                image_uri_lists.add(temp_uri_list);                                                 //      add the temp array to the 2d array
-                amount_of_folders = image_uri_lists.size();                                         //      update the amount of folders
+                image.setImageBitmap(getRandomImage(temp_uri_list, IMAGE_URI_LISTS.size()));        //      call getRandomImage()
+                IMAGE_URI_LISTS.add(temp_uri_list);                                                 //      add the temp array to the 2d array
+                amount_of_folders = IMAGE_URI_LISTS.size();                                         //      update the amount of folders
             }
             else {                                                                                  // ELSE
                 showSnackbarInMain(R.string.snackbar_no_images);                                          //      show a snackbar saying no images were found
