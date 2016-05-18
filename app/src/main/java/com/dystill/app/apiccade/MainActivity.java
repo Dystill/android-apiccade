@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ImageView image;
     private Snackbar snackbar;
+    private Menu action_menu;
 
     private final ArrayList<Uri> DIRECTORY_URI_LIST = new ArrayList<>();
     private final ArrayList<ArrayList<Uri>> IMAGE_URI_LISTS = new ArrayList<>();
@@ -41,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private int prev_image_folder;
     private int prev_image_position;
     private int amount_of_folders = 0;
+    private boolean show_redo_button;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {                                            ////// onCreate() //////
@@ -80,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
         amount_of_folders = settings.getInt("amount_of_folders", 0);                                // obtain the amount of folders (rows) added previously
         prev_image_folder = settings.getInt("current_folder", 0);                                   // obtain the folder index of the last obtained image
         prev_image_position  = settings.getInt("current_position", 0);                              // obtain its position in the folder
+        show_redo_button = settings.getBoolean("show_redo", false);                                 // obtain whether to show the redo button or not
 
         Log.v("onCreate", "Getting image uris");
 
@@ -119,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
         editor.putInt("amount_of_folders", IMAGE_URI_LISTS.size());                                 // add entry for the amount of folders
         editor.putInt("current_folder", prev_image_folder);                                         // add entry for the previous displayed image's folder number
         editor.putInt("current_position", prev_image_position);                                     // add entry for its position in the folder
+        editor.putBoolean("show_redo", show_redo_button);                                           // add entry for showing the redo button
 
         for(int f = 0; f < IMAGE_URI_LISTS.size(); f++) {                                           // LOOP through all folders of the 2d arraylist
 
@@ -145,8 +149,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {                                                 ////// onCreateOptionsMenu() //////
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_main, menu);                                          // Inflate the menu; this adds items to the action bar if it is present.
+        action_menu = menu;                                                                         // save menu so it can be found globally
+        setActionVisibility(R.id.action_redo, show_redo_button);                                    // restore visibility of the redo button
         return true;
     }
 
@@ -158,20 +163,11 @@ public class MainActivity extends AppCompatActivity {
                 return true;
 
             case R.id.action_add:                                                                   // add folder action button
-                sendAddFolderIntent();                                                                 // call sendAddFolderIntent()
+                sendAddFolderIntent();                                                              // call sendAddFolderIntent()
                 return true;
 
             case R.id.action_redo:                                                                  // redo action button
-                Log.v("redo", "Started");
-                if(IMAGE_URI_LISTS.size() == 0) {                                                   // IF there are no folders
-                    Log.v("redo", "no folder");
-                    showSnackbarInMain(R.string.snackbar_no_folders, R.string.button_snackbar_add); //      show a snackbar saying that folder is already used
-                }
-                else if (IMAGE_URI_LISTS.size() == 1 && IMAGE_URI_LISTS.get(0).size() == 1) {       // ELSE IF there is only one image
-                    Log.v("redo", "no folder");
-                    showSnackbarInMain(R.string.snackbar_no_redo, R.string.button_snackbar_add);    // show a snackbar
-                }
-                else if (IMAGE_URI_LISTS.size() > 0) {                                              // IF a folder has been added
+                if (IMAGE_URI_LISTS.size() > 0) {                                                   // IF a folder has been added
                     image.setImageBitmap(getRandomImageFrom2d(IMAGE_URI_LISTS));                    //      re-roll an image out of all folders
                 }
                 else
@@ -179,12 +175,23 @@ public class MainActivity extends AppCompatActivity {
                 return true;
 
             case R.id.action_clear:                                                                 // clear cache action button
-                image.setImageResource(R.drawable.start);
-                for(int f = 0; f < IMAGE_URI_LISTS.size(); f++) {                                   // LOOP through all rows of the 2d arraylist
-                    IMAGE_URI_LISTS.get(f).clear();
+                if(IMAGE_URI_LISTS.size() > 0) {                                                    // IF there are folders loaded
+
+                    setActionVisibility(R.id.action_redo, false);                                   //      hide the redo button
+                    show_redo_button = false;                                                       //      flag
+
+                    image.setImageResource(R.drawable.start);                                       //      set the image to its default
+                    for (int f = 0; f < IMAGE_URI_LISTS.size(); f++) {                              //      LOOP through all rows of the 2d arraylist
+                        IMAGE_URI_LISTS.get(f).clear();                                             //          clear all image uris from the row
+                    }
+
+                    IMAGE_URI_LISTS.clear();                                                        //      clear the 2d arraylist
+                    DIRECTORY_URI_LIST.clear();                                                     //      clear the directory arraylist
+
+                    showSnackbarInMain(R.string.snackbar_clear);                                    //      notify user that the images were cleared
                 }
-                IMAGE_URI_LISTS.clear();
-                showSnackbarInMain(R.string.snackbar_clear);
+                else                                                                                // ELSE there are no folders loaded
+                    showSnackbarInMain(R.string.snackbar_no_folders, R.string.button_snackbar_add); //      notify that no folders were added yet
                 return true;
 
             default:                                                                                // the user's action was not recognized.
@@ -211,12 +218,12 @@ public class MainActivity extends AppCompatActivity {
                     new AsyncFolderLoad().execute(tree_uri.toString());                             //          call the AsyncFolderLoad AsyncTask
                 }
                 else {                                                                              //      ELSE
-                    showSnackbarInMain(R.string.snackbar_used_folder, R.string.button_snackbar_retry);                                                              //          show a snackbar saying that folder is already used
+                    showSnackbarInMain(R.string.snackbar_used_folder, R.string.button_snackbar_retry); //        show a snackbar saying that folder is already used
                 }
             }
             else {
                 Log.v("onActivityResult", "Else");                                                  // ELSE
-                showSnackbarInMain(R.string.snackbar_no_folder, R.string.button_snackbar_retry);                                                                  //      show a snackbar saying no folder was selected
+                showSnackbarInMain(R.string.snackbar_no_selection, R.string.button_snackbar_retry); //      show a snackbar saying no folder was selected
             }
         }
         else if(requestCode == SELECT_IMAGES_KITKAT) {
@@ -243,9 +250,14 @@ public class MainActivity extends AppCompatActivity {
             }
             else {
                 Log.v("onActivityResult", "Else");                                                  // ELSE
-                showSnackbarInMain(R.string.snackbar_no_folder, R.string.button_snackbar_retry);    //      show a snackbar saying no folder was selected
+                showSnackbarInMain(R.string.snackbar_no_selection, R.string.button_snackbar_retry); //      show a snackbar saying no folder was selected
             }
         }
+    }
+
+    private void setActionVisibility(int id, boolean state) {                                       ////// setActionVisibility() //////
+        MenuItem item = action_menu.findItem(id);                                                   // get the specified item from the action menu
+        item.setVisible(state);                                                                     // set the item to the specified visibility state
     }
 
     private void sendAddFolderIntent() {                                                            ////// sendAddFolderIntent() //////
@@ -410,7 +422,7 @@ public class MainActivity extends AppCompatActivity {
     ////// AsyncFolderLoad class //////                                                             ////// AsyncFolderLoad class //////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private class AsyncFolderLoad extends AsyncTask<String, Void, Void> {
+    private class AsyncFolderLoad extends AsyncTask<String, Void, String> {
 
         final DocumentFile file_names[] = directory_doc.listFiles();                                // get list of files
         final ArrayList<Uri> temp_uri_list = new ArrayList<>();                                     // create a temp array
@@ -421,14 +433,12 @@ public class MainActivity extends AppCompatActivity {
             Log.v("Async", "PreStarted");
             super.onPreExecute();
             image.setImageAlpha(0);                                                                 // hide previous image (used instead of setVisibility() to preserve image dimensions)
-            if(loader != null) loader.setVisibility(View.VISIBLE);                                                       // show loading circle
+            if(loader != null) loader.setVisibility(View.VISIBLE);                                  // show loading circle
         }
 
         @Override
-        protected Void doInBackground(String... params) {                                             ////// doInBackground //////
+        protected String doInBackground(String... params) {                                         ////// doInBackground //////
             Log.v("Async", "doStarted");
-
-            DIRECTORY_URI_LIST.add(Uri.parse(params[0]));                                                             // add the directory path to the first spot
 
             for (DocumentFile file : file_names) {                                                  // LOOP through all elements in the list of files
                 if(file.getName().matches("(.*)\\.(png|jpg|bmp)")) {                                //      IF file is an image
@@ -436,20 +446,27 @@ public class MainActivity extends AppCompatActivity {
                     temp_uri_list.add(file.getUri());                                               //      add the image's uri to the temp array
                 }
                 else
-                    Log.d("Listed Files", file.getName() + " Skipped.");
+                    Log.d("Listed Files", file.getName() + " Skipped.");                            //      ELSE skip files that are not images
             }
 
-            return null;
+            return params[0];
         }
 
         @Override
-        protected void onPostExecute(Void params) {                                                 ////// onPostExecute //////
+        protected void onPostExecute(String directory_uri_string) {                                 ////// onPostExecute //////
             Log.v("Async", "postStarted");
 
             if(temp_uri_list.size() > 0) {                                                          // IF the temp array has no image uris (only 1 for the directory uri added in doInBackground())
                 image.setImageBitmap(getRandomImage(temp_uri_list, IMAGE_URI_LISTS.size()));        //      call getRandomImage()
+                DIRECTORY_URI_LIST.add(Uri.parse(directory_uri_string));                            //      add the directory path to the first spot
                 IMAGE_URI_LISTS.add(temp_uri_list);                                                 //      add the temp array to the 2d array
                 amount_of_folders = IMAGE_URI_LISTS.size();                                         //      update the amount of folders
+
+                if (!show_redo_button &&                                                            //      IF the redo button is not currently visible
+                        (IMAGE_URI_LISTS.size() > 1 || temp_uri_list.size() > 1)) {                 //      AND there is more than one folder added OR more than one image in the current folder
+                    setActionVisibility(R.id.action_redo, true);                                    //          set the redo button to visible
+                    show_redo_button = true;                                                        //          flag
+                }
             }
             else {                                                                                  // ELSE
                 showSnackbarInMain(R.string.snackbar_no_images);                                    //      show a snackbar saying no images were found
