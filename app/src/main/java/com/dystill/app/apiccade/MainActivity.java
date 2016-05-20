@@ -80,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
         else {                                                                                      // ELSE
             if(recentlyRemoved == current_image_folder) {
                 image.setImageBitmap(getRandomImageFrom2d(IMAGE_URI_LISTS));
+                recentlyRemoved = -1;
             }
             else {
                 image.setImageBitmap(getImageFrom2d(
@@ -493,7 +494,7 @@ public class MainActivity extends AppCompatActivity {
             temp_uri_list = new ArrayList<>();                                                      // create a temp array
 
             for (DocumentFile file : file_names) {                                                  // LOOP through all elements in the list of files
-                if(file.getName().matches("(.*)\\.(png|jpg|bmp)")) {                                //      IF file is an image
+                if(file.getName().matches("(.*)\\.([Pp][Nn][Gg]|[Jj][Pp][Ee]?[Gg]|[Bb][Mm][Pp])")) {//      IF file is a png, jpg, or bmp
                     // Log.d("Listed Files", file.getName() + " Added.");
                     temp_uri_list.add(file.getUri());                                               //      add the image's uri to the temp array
                 }

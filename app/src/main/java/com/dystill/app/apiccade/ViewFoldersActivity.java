@@ -2,7 +2,6 @@ package com.dystill.app.apiccade;
 
 import android.content.Context;
 import android.net.Uri;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -16,6 +15,9 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+
+import jp.wasabeef.recyclerview.animators.SlideInRightAnimator;
+import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
 
 public class ViewFoldersActivity extends AppCompatActivity {
 
@@ -35,7 +37,7 @@ public class ViewFoldersActivity extends AppCompatActivity {
         if (recycler_view != null) {
             recycler_view.setAdapter(adapter);
             recycler_view.setLayoutManager(new LinearLayoutManager(this));
-            recycler_view.setItemAnimator(new DefaultItemAnimator());
+            recycler_view.setItemAnimator(new SlideInRightAnimator());
         }
 
         adapter.notifyItemRangeChanged(0, MainActivity.getDirectoryList().size());
