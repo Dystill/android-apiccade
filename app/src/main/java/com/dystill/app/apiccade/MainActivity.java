@@ -31,15 +31,17 @@ public class MainActivity extends AppCompatActivity {
 
     protected static ArrayList<ArrayList<Uri>> IMAGE_URI_LISTS;
     protected static ArrayList<Uri> DIRECTORY_URI_LIST;
-    protected static boolean show_redo_button;
+    private static boolean show_redo_button;
+    private static int recentlyRemoved;
+
+    private int current_image_folder;
+    private int current_image_position;
 
     private DocumentFile directory_doc = null;
-    private int prev_image_folder;
-    private int prev_image_position;
-
-    private ImageView image;
     private Snackbar snackbar;
+
     private static Menu action_menu;
+    private static ImageView image;
 
     private static final int SELECT_WATCH_FOLDER = 1;
     private static final int SELECT_IMAGES_KITKAT = 2;
@@ -67,13 +69,22 @@ public class MainActivity extends AppCompatActivity {
                 showSnackbarInMain(R.string.snackbar_fab);                                          // placeholder snackbar on click
             }
         });
+    }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
         if(IMAGE_URI_LISTS.isEmpty()) {                                                             // IF there are no folders
             if (image != null) image.setImageResource(R.drawable.start);                            //      use a starting image in drawable
         }
         else {                                                                                      // ELSE
-            image.setImageBitmap(getImageFrom2d(
-                    IMAGE_URI_LISTS, prev_image_folder, prev_image_position));                      //      get the previously displayed image to redisplay
+            if(recentlyRemoved == current_image_folder) {
+                image.setImageBitmap(getRandomImageFrom2d(IMAGE_URI_LISTS));
+            }
+            else {
+                image.setImageBitmap(getImageFrom2d(
+                        IMAGE_URI_LISTS, current_image_folder, current_image_position));                      //      get the previously displayed image to redisplay
+            }
         }
     }
 
@@ -86,8 +97,8 @@ public class MainActivity extends AppCompatActivity {
         editor.clear();                                                                             // clear previous data
 
         editor.putInt("amount_of_folders", IMAGE_URI_LISTS.size());                                 // add entry for the amount of folders
-        editor.putInt("current_folder", prev_image_folder);                                         // add entry for the previous displayed image's folder number
-        editor.putInt("current_position", prev_image_position);                                     // add entry for its position in the folder
+        editor.putInt("current_folder", current_image_folder);                                         // add entry for the previous displayed image's folder number
+        editor.putInt("current_position", current_image_position);                                     // add entry for its position in the folder
         editor.putBoolean("show_redo", show_redo_button);                                           // add entry for showing the redo button
 
         for(int f = 0; f < IMAGE_URI_LISTS.size(); f++) {                                           // LOOP through all folders of the 2d arraylist
@@ -97,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
             Log.v("onDestroy", "Folder " + f);
             for (int i = 0; i < IMAGE_URI_LISTS.get(f).size(); i++) {                               //      LOOP through each image uri of the arraylist to the end
 
-                Log.v("onDestroy", "Adding imageuri_f" + f + "_i" + i);
+                // Log.v("onDestroy", "Adding imageuri_f" + f + "_i" + i);
 
                 editor.putString("imageuri_f" + f + "_i" + i,
                         IMAGE_URI_LISTS.get(f).get(i).toString());                                  //          store each entry into the pref file
@@ -219,14 +230,18 @@ public class MainActivity extends AppCompatActivity {
         /**/
     }
 
-    ////// Utility Methods //////
 
+    /////////////////////////////
+    ////// Utility Methods //////
+    /////////////////////////////
+
+    // load data from the shared preferences file
     private void loadPreferences() {
         Log.v("onCreate", "Preferences");
         SharedPreferences settings = getSharedPreferences("preferences", 0);                        // find the preferences file
 
-        prev_image_folder = settings.getInt("current_folder", 0);                                   // obtain the folder index of the last obtained image
-        prev_image_position  = settings.getInt("current_position", 0);                              // obtain its position in the folder
+        current_image_folder = settings.getInt("current_folder", 0);                                   // obtain the folder index of the last obtained image
+        current_image_position  = settings.getInt("current_position", 0);                              // obtain its position in the folder
         show_redo_button = settings.getBoolean("show_redo", false);                                 // obtain whether to show the redo button or not
 
         // Log.v("onCreate", "Getting image uris");
@@ -249,6 +264,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // creates an intent to let user select a image directory from the file system.
     private void sendAddFolderIntent() {                                                            ////// sendAddFolderIntent() //////
         Intent intent;
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {                     // IF lollipop or greater
@@ -269,6 +285,7 @@ public class MainActivity extends AppCompatActivity {
         } /**/
     }
 
+    // checks whether or not a folder Uri is already in the uri arraylist.
     private boolean isAlreadyUsed(ArrayList<ArrayList<Uri>> uri_list_2d, Uri tree) {                  ////// alreadyUsed() //////
 
         Log.v("alreadyUsed", "Started");
@@ -290,6 +307,7 @@ public class MainActivity extends AppCompatActivity {
                                                                                                     // this instance is handled later in the AsyncTask
     }
 
+    // takes the uri of an image in the file system and returns a bitmap usable in an ImageView
     private Bitmap getBitmapFromUri(Uri uri) throws IOException {                                   ////// getBitmapFromUri() a.k.a. Magic. //////
         ParcelFileDescriptor parcelFileDescriptor =
                 getContentResolver().openFileDescriptor(uri, "r");                                  // Taken from https://developer.android.com/guide/topics/providers/document-provider.html
@@ -299,11 +317,13 @@ public class MainActivity extends AppCompatActivity {
         return image;
     }
 
+    // sets the visibility of an action menu item to the specified boolean value
     private static void updateActionVisibility(int id, boolean state) {                             ////// updateActionVisibility() //////
         MenuItem item = action_menu.findItem(id);                                                   // get the specified item from the action menu
         item.setVisible(state);                                                                     // set the item to the specified visibility state
     }
 
+    // check if the current uri arraylist has either 0 or 1 images loaded into it.
     private static void checkImagePoolSize() {
         if (IMAGE_URI_LISTS.isEmpty()) {
             updateActionVisibility(R.id.action_redo, false);                                        //          set the redo button to visible
@@ -321,27 +341,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // return the directory arraylist
     protected static ArrayList<Uri> getDirectoryList() {
         return DIRECTORY_URI_LIST;
     }
 
+    // return the uri arraylist
     protected static ArrayList<ArrayList<Uri>> getImageUriLists() {
         return IMAGE_URI_LISTS;
     }
 
-    protected static void removeDirectory(Uri uri) {
-        for(int i = 0; i < DIRECTORY_URI_LIST.size(); i++) {
-            if(uri == DIRECTORY_URI_LIST.get(i)) {
-                DIRECTORY_URI_LIST.remove(i);
-                IMAGE_URI_LISTS.get(i).clear();
-                IMAGE_URI_LISTS.remove(i);
-            }
-        }
+    // remove a directory by its position in the arraylists
+    protected static void removeDirectory(int folder) {
+        recentlyRemoved = folder;
+        DIRECTORY_URI_LIST.remove(folder);
+        IMAGE_URI_LISTS.get(folder).clear();
+        IMAGE_URI_LISTS.remove(folder);
         checkImagePoolSize();
     }
 
-    ////// getImage methods //////
 
+    //////////////////////////////
+    ////// getImage methods //////
+    //////////////////////////////
+
+    // return a bitmap image by its position the uri arraylist
     private Bitmap getImageFrom2d(ArrayList<ArrayList<Uri>> uri_list_2d, int f, int i) {                               ////// getRandomImage()  //////
         try {
             return getBitmapFromUri(uri_list_2d.get(f).get(i));                                               // return a bitmap of the randomly selected uri
@@ -352,14 +376,15 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
+    // return a random image from one row of the uri arraylist
     private Bitmap getRandomImage(ArrayList<Uri> uri_list, int f) {                               ////// getRandomImage()  //////
 
         Log.v("getRandomImage", "Started");
 
         int i = (int)(Math.random() * uri_list.size());                                                      // get a random, valid image index
 
-        prev_image_folder = f;
-        prev_image_position = i;
+        current_image_folder = f;
+        current_image_position = i;
 
         //Log.v("getRandomImage", "Selecting image #" + i + " of " + uri_list.size());
         //Log.v("getRandomImage", uri_list.get(i).getPath());
@@ -374,6 +399,7 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
+    // return a random image from the entire uri arraylist
     private Bitmap getRandomImageFrom2d(ArrayList<ArrayList<Uri>> uri_list_2d) {                    ////// getRandomImageFrom2d  //////
 
         Log.v("getRandomImage2D", "Started");
@@ -388,13 +414,13 @@ public class MainActivity extends AppCompatActivity {
             //        "/" + uri_list_2d.get(f).size() + " in folder #" + f);
 
         } while ((uri_list_2d.get(0).size() > 1 || uri_list_2d.size() > 1) &&
-                 (i == prev_image_position && f == prev_image_folder));                             // WHILE there is more than 1 image in the first array OR there is more than 1 folder
+                 (i == current_image_position && f == current_image_folder));                             // WHILE there is more than 1 image in the first array OR there is more than 1 folder
                                                                                                     // AND both indexes are equal to the previous image's
         // Log.v("getRandomImage2D", "Selecting image #" + i);
         // Log.v("getRandomImage2D", uri_list_2d.get(f).get(i).getPath());
 
-        prev_image_folder = f;
-        prev_image_position = i;
+        current_image_folder = f;
+        current_image_position = i;
 
         try {
             return getBitmapFromUri(uri_list_2d.get(f).get(i));                                          // return a bitmap of the selected uri
@@ -406,7 +432,10 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
-    ////// generic Snackbar methods //////
+
+    //////////////////////////////////////
+    ////// cleaner Snackbar methods //////
+    //////////////////////////////////////
 
     private void showSnackbarInMain(int message, int button) {                                      // generic snackbar with button
 

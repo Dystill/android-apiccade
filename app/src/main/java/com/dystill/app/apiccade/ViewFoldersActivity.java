@@ -63,7 +63,7 @@ public class ViewFoldersActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onBindViewHolder(FolderViewHolder holder, int position) {
+        public void onBindViewHolder(FolderViewHolder holder, final int position) {
             Log.v("onBindViewHolder", "Started");
 
             String text1 = directories.get(position).getLastPathSegment();
@@ -75,7 +75,7 @@ public class ViewFoldersActivity extends AppCompatActivity {
             holder.delete_button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Snackbar.make(v, "Delete not implemented yet. Sorry!", Snackbar.LENGTH_LONG).show();
+                    removeAt(position);
                 }
             });
 
@@ -104,6 +104,12 @@ public class ViewFoldersActivity extends AppCompatActivity {
                 secondary_text = (TextView) itemView.findViewById(R.id.folder_subtitle);
                 delete_button = (Button) itemView.findViewById(R.id.folder_delete_button);
             }
+        }
+
+        public void removeAt(int position) {
+            MainActivity.removeDirectory(position);
+            notifyItemRemoved(position);
+            notifyItemRangeChanged(position, directories.size());
         }
     }
 }
