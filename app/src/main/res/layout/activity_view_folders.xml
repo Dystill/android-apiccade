@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="8dp"
     tools:context="com.dystill.app.apiccade.ViewFoldersActivity"
     android:id="@+id/folder_linear_view">
 
@@ -12,7 +11,8 @@
     <android.support.v7.widget.RecyclerView
         android:id="@+id/folder_recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent"
+        android:padding="8dp" >
 
     </android.support.v7.widget.RecyclerView>
 
