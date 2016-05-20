@@ -24,25 +24,26 @@ import android.widget.ImageView;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int SELECT_WATCH_FOLDER = 1;
-    private static final int SELECT_IMAGES_KITKAT = 2;
-
-    private ImageView image;
-    private Snackbar snackbar;
-    private Menu action_menu;
-
-    private final ArrayList<Uri> DIRECTORY_URI_LIST = new ArrayList<>();
-    private final ArrayList<ArrayList<Uri>> IMAGE_URI_LISTS = new ArrayList<>();
+    protected static final ArrayList<ArrayList<Uri>> IMAGE_URI_LISTS = new ArrayList<>();
+    protected static final ArrayList<Uri> DIRECTORY_URI_LIST = new ArrayList<>();
 
     private DocumentFile directory_doc = null;
     private int prev_image_folder;
     private int prev_image_position;
     private int amount_of_folders = 0;
     private boolean show_redo_button;
+
+    private ImageView image;
+    private Snackbar snackbar;
+    private Menu action_menu;
+
+    private static final int SELECT_WATCH_FOLDER = 1;
+    private static final int SELECT_IMAGES_KITKAT = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {                                            ////// onCreate() //////
@@ -144,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
 
         IMAGE_URI_LISTS.clear();                                                                    // clear the entire 2d array
 
-        editor.commit();                                                                            // Commit the Edits!
+        editor.apply();                                                                            // Commit the Edits!
     }
 
     @Override
@@ -192,6 +193,11 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else                                                                                // ELSE there are no folders loaded
                     showSnackbarInMain(R.string.snackbar_no_folders, R.string.button_snackbar_add); //      notify that no folders were added yet
+                return true;
+
+            case R.id.action_folders:
+                Intent intent = new Intent(this, ViewFoldersActivity.class);
+                startActivity(intent);
                 return true;
 
             default:                                                                                // the user's action was not recognized.
@@ -316,6 +322,24 @@ public class MainActivity extends AppCompatActivity {
         return image;
     }
 
+    protected static ArrayList<Uri> getDirectoryList() {
+        return DIRECTORY_URI_LIST;
+    }
+
+    protected static ArrayList<ArrayList<Uri>> getImageListList() {
+        return IMAGE_URI_LISTS;
+    }
+
+    protected static void removeDirectory(Uri uri) {
+        for(int i = 0; i < DIRECTORY_URI_LIST.size(); i++) {
+            if(uri == DIRECTORY_URI_LIST.get(i)) {
+                DIRECTORY_URI_LIST.remove(i);
+                IMAGE_URI_LISTS.get(i).clear();
+                IMAGE_URI_LISTS.remove(i);
+            }
+        }
+    }
+
     ////// getImage methods //////
 
     private Bitmap getImageFrom2d(ArrayList<ArrayList<Uri>> uri_list_2d, int f, int i) {                               ////// getRandomImage()  //////
@@ -414,7 +438,6 @@ public class MainActivity extends AppCompatActivity {
         snackbar.show();
 
     }
-
 
 
 

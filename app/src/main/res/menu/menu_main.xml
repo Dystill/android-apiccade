@@ -17,13 +17,18 @@
         android:title="@string/action_add"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_clear"
+        android:id="@+id/action_folders"
         android:orderInCategory="300"
+        android:title="@string/action_folders"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_clear"
+        android:orderInCategory="400"
         android:title="@string/action_clear"
         app:showAsAction="never" />
     <item
         android:id="@+id/action_settings"
-        android:orderInCategory="400"
+        android:orderInCategory="500"
         android:title="@string/action_settings"
         app:showAsAction="never" />
 </menu>
