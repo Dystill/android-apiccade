@@ -29,8 +29,8 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
-    protected static final ArrayList<ArrayList<Uri>> IMAGE_URI_LISTS = new ArrayList<>();
-    protected static final ArrayList<Uri> DIRECTORY_URI_LIST = new ArrayList<>();
+    protected static ArrayList<ArrayList<Uri>> IMAGE_URI_LISTS;
+    protected static ArrayList<Uri> DIRECTORY_URI_LIST;
 
     private DocumentFile directory_doc = null;
     private int prev_image_folder;
@@ -55,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
         Log.v("onCreate", "Started");
 
         image = (ImageView) findViewById(R.id.main_image);                                          // get the ImageView from the starting activity
+        IMAGE_URI_LISTS = new ArrayList<>();
+        DIRECTORY_URI_LIST = new ArrayList<>();
 
         loadPreferences();                                                                          // load the data saved from onDestroy last time
 
@@ -98,16 +100,13 @@ public class MainActivity extends AppCompatActivity {
             temp_uri_list = new ArrayList<>();                                                      //      allocate new pointer for the images in this folder
 
             for (int i = 0; settings.contains("imageuri_f" + f + "_i" + i); i++) {                  //      LOOP while there are still unobtained uris in the file
-
                 temp_uri_list.add(Uri.parse(settings
                         .getString("imageuri_f" + f + "_i" + i, "")));                              //          add each stored uri to the temp arraylist
 
                 Log.v("onCreate", "Added " + "imageuri_f" + f + "_i" + i);
 
             }
-
             IMAGE_URI_LISTS.add(temp_uri_list);                                                     //      add the temp arraylist to the 2d arraylist
-
         }
 
     }
@@ -136,23 +135,18 @@ public class MainActivity extends AppCompatActivity {
 
                 editor.putString("imageuri_f" + f + "_i" + i,
                         IMAGE_URI_LISTS.get(f).get(i).toString());                                  //          store each entry into the pref file
-
             }
-
             IMAGE_URI_LISTS.get(f).clear();                                                         //      clear the folder from the array when the end is reached
-
         }
-
         IMAGE_URI_LISTS.clear();                                                                    // clear the entire 2d array
-
-        editor.apply();                                                                            // Commit the Edits!
+        editor.apply();                                                                             // Commit the Edits!
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {                                                 ////// onCreateOptionsMenu() //////
         getMenuInflater().inflate(R.menu.menu_main, menu);                                          // Inflate the menu; this adds items to the action bar if it is present.
         action_menu = menu;                                                                         // save menu so it can be found globally
-        setActionVisibility(R.id.action_redo, show_redo_button);                                    // restore visibility of the redo button
+        updateActionVisibility(R.id.action_redo, show_redo_button);                                 // restore visibility of the redo button
         return true;
     }
 
@@ -178,8 +172,7 @@ public class MainActivity extends AppCompatActivity {
             case R.id.action_clear:                                                                 // clear cache action button
                 if(IMAGE_URI_LISTS.size() > 0) {                                                    // IF there are folders loaded
 
-                    setActionVisibility(R.id.action_redo, false);                                   //      hide the redo button
-                    show_redo_button = false;                                                       //      flag
+                    checkImagePoolSize();
 
                     image.setImageResource(R.drawable.start);                                       //      set the image to its default
                     for (int f = 0; f < IMAGE_URI_LISTS.size(); f++) {                              //      LOOP through all rows of the 2d arraylist
@@ -261,9 +254,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setActionVisibility(int id, boolean state) {                                       ////// setActionVisibility() //////
+    private void updateActionVisibility(int id, boolean state) {                                    ////// updateActionVisibility() //////
         MenuItem item = action_menu.findItem(id);                                                   // get the specified item from the action menu
         item.setVisible(state);                                                                     // set the item to the specified visibility state
+    }
+
+    private void checkImagePoolSize() {
+        if (IMAGE_URI_LISTS.size() > 1 || IMAGE_URI_LISTS.get(0).size() > 1) {
+            updateActionVisibility(R.id.action_redo, true);                                         //          set the redo button to visible
+            show_redo_button = true;                                                                //          flag
+        }
+        else {
+            updateActionVisibility(R.id.action_redo, false);                                        //          set the redo button to visible
+            show_redo_button = false;                                                               //          flag
+        }
     }
 
     private void sendAddFolderIntent() {                                                            ////// sendAddFolderIntent() //////
@@ -356,9 +360,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.v("getRandomImage", "Started");
 
-        Random rand = new Random();                                                                 // initialize Random object
-
-        int i = rand.nextInt(uri_list.size());                                                      // get a random, valid image index
+        int i = (int)(Math.random() * uri_list.size());                                                      // get a random, valid image index
 
         prev_image_folder = f;
         prev_image_position = i;
@@ -380,13 +382,11 @@ public class MainActivity extends AppCompatActivity {
 
         Log.v("getRandomImage2D", "Started");
 
-        Random rand = new Random();                                                                 // initialize Random object
-
         int f, i;
 
         do {
-            f = rand.nextInt(uri_list_2d.size());                                                   // get a random, valid folder index
-            i = rand.nextInt(uri_list_2d.get(f).size());                                            // get a random, valid image index
+            f = (int)(Math.random() * uri_list_2d.size());                                          // get a random, valid folder index
+            i = (int)(Math.random() * uri_list_2d.get(f).size());                                   // get a random, valid image index
 
             Log.v("getRandomImage2D", "Checking image #" + i +
                     "/" + uri_list_2d.get(f).size() + " in folder #" + f);
@@ -485,11 +485,7 @@ public class MainActivity extends AppCompatActivity {
                 IMAGE_URI_LISTS.add(temp_uri_list);                                                 //      add the temp array to the 2d array
                 amount_of_folders = IMAGE_URI_LISTS.size();                                         //      update the amount of folders
 
-                if (!show_redo_button &&                                                            //      IF the redo button is not currently visible
-                        (IMAGE_URI_LISTS.size() > 1 || temp_uri_list.size() > 1)) {                 //      AND there is more than one folder added OR more than one image in the current folder
-                    setActionVisibility(R.id.action_redo, true);                                    //          set the redo button to visible
-                    show_redo_button = true;                                                        //          flag
-                }
+                if (!show_redo_button) checkImagePoolSize();
             }
             else {                                                                                  // ELSE
                 showSnackbarInMain(R.string.snackbar_no_images);                                    //      show a snackbar saying no images were found

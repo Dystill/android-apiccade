@@ -4,18 +4,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@color/colorBackground"
     tools:context="com.dystill.app.apiccade.ViewFoldersActivity"
     android:id="@+id/folder_linear_view">
-
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/folder_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp" >
+        android:paddingBottom="14dp"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:paddingTop="14dp" >
 
     </android.support.v7.widget.RecyclerView>
-
-
 
 </LinearLayout>
